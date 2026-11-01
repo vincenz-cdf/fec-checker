@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# FEC fixtures must keep their exact bytes (CRLF line endings)
+test_data/fec/*.txt -text

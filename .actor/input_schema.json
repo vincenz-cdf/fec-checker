@@ -1,8 +1,54 @@
 {
     "$schema": "https://apify.com/schemas/v1/input.ide.json",
-    "title": "Actor input",
+    "title": "FEC Checker input",
+    "description": "Validate a French FEC (Fichier des Écritures Comptables) against the format rules of article A47 A-1 of the Livre des procédures fiscales.",
     "type": "object",
     "schemaVersion": 1,
-    "properties": {},
-    "required": []
+    "properties": {
+        "fecFile": {
+            "title": "FEC file",
+            "type": "string",
+            "description": "Upload the FEC file (.txt or .csv, tab- or pipe-separated) or paste a public URL to it.",
+            "editor": "fileupload"
+        },
+        "language": {
+            "title": "Report language",
+            "type": "string",
+            "description": "Language of the validation report and error messages.",
+            "editor": "select",
+            "enum": ["fr", "en"],
+            "enumTitles": ["Français", "English"],
+            "default": "fr"
+        },
+        "includeAiReport": {
+            "title": "Include AI report",
+            "type": "boolean",
+            "description": "Add an AI-written summary that explains the detected anomalies and suggests fixes.",
+            "default": false
+        },
+        "fiscalYearEnd": {
+            "title": "Fiscal year end",
+            "type": "string",
+            "description": "Closing date of the fiscal year (YYYY-MM-DD). Lines dated after it are flagged as a risk signal. When empty, the date in the file name (SIRENFECAAAAMMJJ) is used.",
+            "editor": "datepicker",
+            "dateType": "absolute"
+        },
+        "fileName": {
+            "title": "Original file name",
+            "type": "string",
+            "description": "Name to check against the SIRENFECAAAAMMJJ.txt rule, for when the upload or URL does not keep the original name. Leave empty to use the name from the download.",
+            "editor": "textfield",
+            "default": "",
+            "sectionCaption": "Advanced"
+        },
+        "maxIssuesPerRule": {
+            "title": "Max occurrences listed per rule",
+            "type": "integer",
+            "description": "Every occurrence is counted, but only this many are listed (with line numbers) for each rule, to keep the report readable.",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 50
+        }
+    },
+    "required": ["fecFile"]
 }

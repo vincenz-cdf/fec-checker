@@ -1,6 +1,60 @@
 {
     "$schema": "https://apify.com/schemas/v1/dataset.ide.json",
     "actorSpecification": 1,
-    "fields": {},
-    "views": {}
+    "fields": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+            "fileName": { "type": "string", "description": "Name of the checked file." },
+            "checkedAt": { "type": "string", "description": "UTC time of the check (ISO 8601)." },
+            "language": { "type": "string", "enum": ["fr", "en"], "description": "Language of the messages." },
+            "verdict": { "type": "string", "enum": ["valid", "valid_with_warnings", "invalid"], "description": "Overall result." },
+            "score": { "type": "integer", "minimum": 0, "maximum": 100, "description": "Compliance score, 100 is clean. Capped at 49 when there is any error." },
+            "summary": {
+                "type": "object",
+                "description": "Counts of errors, warnings and risk signals.",
+                "properties": {
+                    "errorCount": { "type": "integer" },
+                    "errorRuleCount": { "type": "integer" },
+                    "warningCount": { "type": "integer" },
+                    "warningRuleCount": { "type": "integer" },
+                    "riskSignalCount": { "type": "integer" },
+                    "fatal": { "type": "boolean", "description": "True when the header could not be read and line checks did not run." }
+                }
+            },
+            "errors": { "type": "array", "description": "Failed rules, each with its total count and sample occurrences (line, field, entry, value, message).", "items": { "type": "object" } },
+            "warnings": { "type": "array", "description": "Warnings, same shape as errors.", "items": { "type": "object" } },
+            "riskSignals": { "type": "array", "description": "Audit risk signals: signal, level, count, details, lines, message.", "items": { "type": "object" } },
+            "stats": { "type": "object", "description": "Encoding, separator, line/entry/journal/account counts, totals, date range, fiscal year end, numbering scope, Benford test, duration." },
+            "skippedChecks": { "type": "array", "description": "Checks that could not run, for example because a column is missing.", "items": { "type": "string" } },
+            "aiReport": {
+                "type": ["object", "null"],
+                "description": "Prioritized fix list written by AI when includeAiReport is on: status, model, summary, fixes."
+            }
+        },
+        "required": ["fileName", "verdict", "score", "summary", "errors", "warnings", "riskSignals", "stats"]
+    },
+    "views": {
+        "overview": {
+            "title": "Overview",
+            "transformation": {
+                "fields": ["fileName", "verdict", "score", "summary.errorCount", "summary.warningCount", "summary.riskSignalCount", "stats.lineCount", "stats.entryCount", "checkedAt"],
+                "flatten": ["summary", "stats"]
+            },
+            "display": {
+                "component": "table",
+                "properties": {
+                    "fileName": { "label": "File", "format": "text" },
+                    "verdict": { "label": "Verdict", "format": "text" },
+                    "score": { "label": "Score", "format": "number" },
+                    "summary.errorCount": { "label": "Errors", "format": "number" },
+                    "summary.warningCount": { "label": "Warnings", "format": "number" },
+                    "summary.riskSignalCount": { "label": "Risk signals", "format": "number" },
+                    "stats.lineCount": { "label": "Lines", "format": "number" },
+                    "stats.entryCount": { "label": "Entries", "format": "number" },
+                    "checkedAt": { "label": "Checked at", "format": "date" }
+                }
+            }
+        }
+    }
 }

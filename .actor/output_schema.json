@@ -1,12 +1,17 @@
 {
     "$schema": "https://apify.com/schemas/v1/output.ide.json",
     "actorOutputSchemaVersion": 1,
-    "title": "Output schema",
+    "title": "FEC Checker output",
     "properties": {
+        "report": {
+            "type": "string",
+            "title": "Report (JSON)",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/REPORT"
+        },
         "results": {
             "type": "string",
-            "title": "Results",
-            "template": "{{links.apiDefaultDatasetUrl}}/items"
+            "title": "Overview",
+            "template": "{{links.apiDefaultDatasetUrl}}/items?view=overview"
         }
     }
 }

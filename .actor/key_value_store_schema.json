@@ -1,0 +1,19 @@
+{
+    "$schema": "https://apify.com/schemas/v1/key-value-store.ide.json",
+    "actorKeyValueStoreSchemaVersion": 1,
+    "title": "FEC Checker records",
+    "collections": {
+        "report": {
+            "title": "Report",
+            "description": "The full JSON report, same content as the dataset item.",
+            "key": "REPORT",
+            "contentTypes": ["application/json"]
+        },
+        "state": {
+            "title": "Abort state",
+            "description": "Written only when the run is aborted: how many lines were read.",
+            "key": "STATE",
+            "contentTypes": ["application/json"]
+        }
+    }
+}
