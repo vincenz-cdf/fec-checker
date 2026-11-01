@@ -40,12 +40,17 @@ Warnings: empty lines, zero lines, negative amounts, validation date before entr
 
 | Field | Type | Description |
 |---|---|---|
-| `fecFile` | file upload or URL | The FEC file (.txt, tab- or pipe-separated, UTF-8 or ISO-8859-15). Required. |
+| `fecFile` | file upload or URL | The FEC file (.txt, tab- or pipe-separated, UTF-8 or ISO-8859-15). Leave empty to check a bundled demo file (synthetic data, not charged). |
 | `language` | `fr` / `en` | Language of messages. Default `fr`. |
 | `includeAiReport` | boolean | Add an AI-written, prioritized fix list. Default `false`. |
 | `fiscalYearEnd` | date | Closing date. Optional; defaults to the date in the file name. |
 | `fileName` | string | Original file name, when the upload or URL does not keep it. Optional. |
 | `maxIssuesPerRule` | integer | How many occurrences are listed per rule (all are counted). Default 50. |
+| `deleteUploadedFile` | boolean | Delete the file uploaded through the form once the report is written. Default `true`. |
+
+### Try it with an empty input
+
+Run the Actor with no input at all and it checks a bundled synthetic FEC that contains an impossible date, a wrongly formatted date, a validation date out of order and lines dated after the year end. The demo is not charged; `demo` is `true` in its report.
 
 ```json
 {
@@ -81,15 +86,21 @@ One dataset item (also saved as the `REPORT` record in the key-value store):
     "riskSignals": [],
     "stats": { "encoding": "utf-8", "separator": "pipe", "lineCount": 214, "entryCount": 87, "totalDebit": "193104,48", "totalCredit": "193004,48", "fiscalYearEnd": "2025-12-31", "numberingScope": "global" },
     "skippedChecks": [],
-    "aiReport": { "status": "ok", "model": "claude-opus-5-5", "summary": "...", "fixes": [{ "priority": 1, "severity": "blocking", "title": "...", "rules": ["entry_unbalanced"], "action": "...", "where": "..." }] }
+    "aiSummary": { "status": "ok", "model": "claude-opus-5-5", "summary": "...", "fixes": [{ "priority": 1, "severity": "blocking", "title": "...", "rules": ["entry_unbalanced"], "action": "...", "where": "..." }] },
+    "demo": false,
+    "uploadedFileDeleted": true
 }
 ```
 
 **Verdict** is `valid`, `valid_with_warnings` or `invalid`. **Score** starts at 100. Each failed error rule costs 10 points plus up to 10 more as its count grows, each warning rule costs 2 (10 at most), and each risk signal costs 2, 5 or 10 by level. Any error caps the score at 49.
 
-## Privacy and the AI report
+## Privacy
 
-The AI fix list is written by Claude (Anthropic). **Only the report is sent: rule codes, counts, line numbers and summary statistics.** No file line, account label, entry label or field value leaves the Actor. The downloaded file is deleted when the check ends.
+- **Only the report is kept.** The Actor's working copy of your file is deleted as soon as the check ends, and a file uploaded through the input form is deleted from your Apify storage once the report is written (turn off `deleteUploadedFile` to keep it). Files given by an external URL are never touched.
+- **No line of your file is logged.** Logs contain the file name, its size and the counts.
+- The report lists the offending value of each sample occurrence (for example `20250230`) so you can find it, and nothing else from the file.
+- **AI summary:** written by Claude (Anthropic) from a stripped-down report: rule codes, counts, line numbers and summary statistics. No line, account label, entry label or field value is sent.
+- The Actor runs with **limited permissions**: it can only reach its own storages and what you give it as input.
 
 ## Pricing
 

@@ -88,7 +88,7 @@ def build_report(result: ValidationResult, language: str) -> dict:
         'riskSignals': signals,
         'stats': result.stats,
         'skippedChecks': result.skipped_checks,
-        'aiReport': None,
+        'aiSummary': None,
     }
 
 

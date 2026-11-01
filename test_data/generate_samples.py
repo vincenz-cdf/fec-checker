@@ -143,13 +143,13 @@ def to_rows(entries: list[tuple]) -> list[list[str]]:
     return rows
 
 
-def write(case: str, header: list[str], rows: list[list[str]]) -> None:
+def write(case: str, header: list[str], rows: list[list[str]], out_dir: Path = OUT_DIR) -> None:
     """Each case gets its own folder so every file keeps the legal name SIRENFECAAAAMMJJ.txt."""
     lines = [SEP.join(header)] + [SEP.join(row) for row in rows]
-    path = OUT_DIR / case / f'{SIREN}FEC{CLOSING}.txt'
+    path = out_dir / case / f'{SIREN}FEC{CLOSING}.txt'
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(('\r\n'.join(lines) + '\r\n').encode('utf-8'))
-    print(f'{path.relative_to(OUT_DIR.parent)}: {len(rows)} lines')
+    print(f'{path}: {len(rows)} lines')
 
 
 def main() -> None:
@@ -188,6 +188,8 @@ def main() -> None:
             if r[8] == piece:
                 r[column] = value
     write('bad_dates', HEADER, rows)
+    # The Actor checks this file when started with an empty input: it shows errors, warnings and signals.
+    write('demo', HEADER, rows, out_dir=Path(__file__).parent.parent / 'my_actor')
 
 
 if __name__ == '__main__':

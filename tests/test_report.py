@@ -64,7 +64,7 @@ class TestReport(unittest.TestCase):
         self.assertEqual(report['verdict'], 'valid')
         self.assertEqual(report['score'], 100)
         self.assertEqual(report['errors'], [])
-        self.assertIsNone(report['aiReport'])
+        self.assertIsNone(report['aiSummary'])
         json.dumps(report)  # serializable
 
     def test_errors_and_warnings_are_split(self) -> None:

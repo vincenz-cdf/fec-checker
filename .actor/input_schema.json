@@ -8,7 +8,7 @@
         "fecFile": {
             "title": "FEC file",
             "type": "string",
-            "description": "Upload the FEC file (.txt or .csv, tab- or pipe-separated) or paste a public URL to it.",
+            "description": "Upload the FEC file (.txt, tab- or pipe-separated) or paste a URL to it. Leave empty to check a bundled demo file with synthetic data (not charged).",
             "editor": "fileupload"
         },
         "language": {
@@ -48,7 +48,13 @@
             "minimum": 1,
             "maximum": 10000,
             "default": 50
+        },
+        "deleteUploadedFile": {
+            "title": "Delete the uploaded file after the check",
+            "type": "boolean",
+            "description": "When the file was uploaded to your Apify storage through this form, delete it once the report is written, so only the report is kept. Files given by an external URL are never touched.",
+            "default": true
         }
     },
-    "required": ["fecFile"]
+    "required": []
 }

@@ -27,10 +27,12 @@
             "riskSignals": { "type": "array", "description": "Audit risk signals: signal, level, count, details, lines, message.", "items": { "type": "object" } },
             "stats": { "type": "object", "description": "Encoding, separator, line/entry/journal/account counts, totals, date range, fiscal year end, numbering scope, Benford test, duration." },
             "skippedChecks": { "type": "array", "description": "Checks that could not run, for example because a column is missing.", "items": { "type": "string" } },
-            "aiReport": {
+            "aiSummary": {
                 "type": ["object", "null"],
                 "description": "Prioritized fix list written by AI when includeAiReport is on: status, model, summary, fixes."
-            }
+            },
+            "demo": { "type": "boolean", "description": "True when the input was empty and the bundled demo file was checked." },
+            "uploadedFileDeleted": { "type": "boolean", "description": "True when the uploaded file was deleted from Apify storage after the check." }
         },
         "required": ["fileName", "verdict", "score", "summary", "errors", "warnings", "riskSignals", "stats"]
     },

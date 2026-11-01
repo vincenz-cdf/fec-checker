@@ -18,6 +18,8 @@ from my_actor.fec.ai_report import DEFAULT_MODEL, AiReportError, generate_ai_rep
 from my_actor.fec.report import build_report, report_for_llm
 from my_actor.fec.validator import FecValidator
 
+DEMO_FILE = Path(__file__).resolve().parent / 'demo' / '123456782FEC20251231.txt'
+APIFY_RECORD_RE = re.compile(r'^https://api\.apify\.com/v2/key-value-stores/([A-Za-z0-9~._-]+)/records/([^/?#]+)')
 EVENT_FILE_CHECKED = 'fec-file-checked'
 EVENT_AI_REPORT = 'ai-report'
 PROGRESS_LOG_SECONDS = 10
@@ -104,9 +106,11 @@ async def main() -> None:
 
         actor_input = await Actor.get_input() or {}
         try:
-            source = actor_input.get('fecFile')
-            if not isinstance(source, str) or not source.strip():
-                raise InputError('fecFile is required (upload a file or paste a URL)')
+            source = actor_input.get('fecFile') or ''
+            if not isinstance(source, str):
+                raise InputError('fecFile must be a URL or an uploaded file')
+            source = source.strip()
+            demo = not source
             language = actor_input.get('language', 'fr')
             if language not in ('fr', 'en'):
                 raise InputError('language must be "fr" or "en"')
@@ -116,27 +120,32 @@ async def main() -> None:
             max_issues = int(actor_input.get('maxIssuesPerRule', 50))
             if not 1 <= max_issues <= 10_000:
                 raise InputError('maxIssuesPerRule must be between 1 and 10000')
+            delete_upload = bool(actor_input.get('deleteUploadedFile', True))
         except (InputError, ValueError, TypeError) as e:
             await Actor.fail(status_message=str(e))
             return
 
         charging = Actor.get_charging_manager()
-        if charging.is_event_charge_limit_reached(EVENT_FILE_CHECKED):
+        if not demo and charging.is_event_charge_limit_reached(EVENT_FILE_CHECKED):
             await Actor.fail(status_message='The maximum cost per run does not allow checking a file.')
             return
 
         max_bytes = int(os.environ.get('FEC_MAX_FILE_MB', '2048')) * (1 << 20)
         workdir = Path(tempfile.mkdtemp(prefix='fec-'))
         try:
-            await Actor.set_status_message('Downloading the FEC file')
-            try:
-                path, served_name = await fetch_input_file(source.strip(), workdir, max_bytes)
-            except InputError as e:
-                await Actor.fail(status_message=str(e))
-                return
-            except OSError as e:
-                await Actor.fail(status_message=f'Could not download fecFile: {e.__class__.__name__}')
-                return
+            if demo:
+                Actor.log.info('No fecFile given: checking the bundled demo file (synthetic data, not charged)')
+                path, served_name = DEMO_FILE, DEMO_FILE.name
+            else:
+                await Actor.set_status_message('Downloading the FEC file')
+                try:
+                    path, served_name = await fetch_input_file(source, workdir, max_bytes)
+                except InputError as e:
+                    await Actor.fail(status_message=str(e))
+                    return
+                except OSError as e:
+                    await Actor.fail(status_message=f'Could not download fecFile: {e.__class__.__name__}')
+                    return
             file_name = file_name_override or served_name
             Actor.log.info(f'Checking {file_name} ({path.stat().st_size:,} bytes)')
 
@@ -151,7 +160,9 @@ async def main() -> None:
             shutil.rmtree(workdir, ignore_errors=True)
 
         report = build_report(result, language)
-        await Actor.charge(EVENT_FILE_CHECKED)
+        report['demo'] = demo
+        if not demo:
+            await Actor.charge(EVENT_FILE_CHECKED)
         Actor.log.info(
             f'Verdict {report["verdict"]}, score {report["score"]}: {report["summary"]["errorCount"]} errors, '
             f'{report["summary"]["warningCount"]} warnings, {report["summary"]["riskSignalCount"]} risk signals '
@@ -159,14 +170,42 @@ async def main() -> None:
         )
 
         if include_ai:
-            report['aiReport'] = await build_ai_report(report, language)
+            report['aiSummary'] = await build_ai_summary(report, language)
+
+        # Only the report is kept: the local copy is already gone, now remove the uploaded original.
+        report['uploadedFileDeleted'] = await delete_uploaded_file(source) if delete_upload and not demo else False
 
         await Actor.push_data(report)
         await Actor.set_value('REPORT', report)
         await Actor.set_status_message(f'{report["verdict"]} (score {report["score"]}/100)')
 
 
-async def build_ai_report(report: dict, language: str) -> dict:
+def apify_record_location(url: str) -> tuple[str, str] | None:
+    """(store id, record key) when the URL is a record in an Apify key-value store, else None."""
+    match = APIFY_RECORD_RE.match(url)
+    if not match:
+        return None
+    return match.group(1), urllib.parse.unquote(match.group(2))
+
+
+async def delete_uploaded_file(source: str) -> bool:
+    """Delete a file uploaded through the input form. External URLs are never touched."""
+    location = apify_record_location(source)
+    if location is None or not Actor.is_at_home():
+        return False
+    store_id, key = location
+    if key == 'INPUT':
+        return False
+    try:
+        await Actor.apify_client.key_value_store(store_id).delete_record(key)
+    except Exception as e:  # noqa: BLE001 - deletion is best effort and must not fail the run
+        Actor.log.warning(f'Could not delete the uploaded file ({e.__class__.__name__}); delete it from your storage')
+        return False
+    Actor.log.info('Deleted the uploaded file from your key-value store')
+    return True
+
+
+async def build_ai_summary(report: dict, language: str) -> dict:
     api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
         Actor.log.warning('includeAiReport is on but ANTHROPIC_API_KEY is not set; skipping the AI report')

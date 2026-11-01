@@ -2,4 +2,5 @@
 * text=auto
 
 # FEC fixtures must keep their exact bytes (CRLF line endings)
-test_data/fec/*.txt -text
+test_data/fec/**/*.txt -text
+my_actor/demo/*.txt -text
