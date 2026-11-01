@@ -1,42 +1,43 @@
 {
     "$schema": "https://apify.com/schemas/v1/input.ide.json",
     "title": "FEC Checker input",
-    "description": "Validate a French FEC (Fichier des Écritures Comptables) against the format rules of article A47 A-1 of the Livre des procédures fiscales.",
+    "description": "Check a French FEC (Fichier des Écritures Comptables) against the format rules of article A47 A-1 of the Livre des procédures fiscales, and flag entries a tax auditor would look at. Returns one JSON report per file. Technical check only, not tax advice.",
     "type": "object",
     "schemaVersion": 1,
     "properties": {
         "fecFile": {
             "title": "FEC file",
             "type": "string",
-            "description": "Upload the FEC file (.txt, tab- or pipe-separated) or paste a URL to it. Leave empty to check a bundled demo file with synthetic data (not charged).",
-            "editor": "fileupload"
+            "description": "The FEC to check: upload it or paste an http(s) URL to it. Expected format: one flat .txt file, tab- or pipe-separated, UTF-8 or ISO-8859-15, with the 18 columns JournalCode … Idevise, named SIRENFECAAAAMMJJ.txt (for example 123456782FEC20251231.txt). Leave empty to check a bundled synthetic demo file; demo runs are not charged.",
+            "editor": "fileupload",
+            "default": ""
         },
         "language": {
             "title": "Report language",
             "type": "string",
-            "description": "Language of the validation report and error messages.",
+            "description": "Language of the report messages and of the AI summary: \"fr\" (French) or \"en\" (English). Rule codes, field names and the JSON structure are the same in both languages.",
             "editor": "select",
             "enum": ["fr", "en"],
             "enumTitles": ["Français", "English"],
             "default": "fr"
         },
         "includeAiReport": {
-            "title": "Include AI report",
+            "title": "Include AI summary",
             "type": "boolean",
-            "description": "Add an AI-written summary that explains the detected anomalies and suggests fixes.",
+            "description": "Add a prioritized fix list written by AI (Claude, by Anthropic) in the aiSummary field. Charged as one extra \"ai-report\" event, only when the summary is produced. Only the report is sent to the AI (rule codes, counts, line numbers, statistics), never lines, labels or values from the file.",
             "default": false
         },
         "fiscalYearEnd": {
             "title": "Fiscal year end",
             "type": "string",
-            "description": "Closing date of the fiscal year (YYYY-MM-DD). Lines dated after it are flagged as a risk signal. When empty, the date in the file name (SIRENFECAAAAMMJJ) is used.",
+            "description": "Closing date of the fiscal year, as YYYY-MM-DD. Lines dated after it are flagged with the entries_after_fiscal_year_end risk signal, and a warning is raised if it differs from the date in the file name. Leave empty to use the date in the file name (the AAAAMMJJ part of SIRENFECAAAAMMJJ.txt).",
             "editor": "datepicker",
             "dateType": "absolute"
         },
         "fileName": {
             "title": "Original file name",
             "type": "string",
-            "description": "Name to check against the SIRENFECAAAAMMJJ.txt rule, for when the upload or URL does not keep the original name. Leave empty to use the name from the download.",
+            "description": "The file name to check against the SIRENFECAAAAMMJJ.txt naming rule. Set it when the upload or URL does not keep the original name, otherwise the file_name rule may fail. Leave empty to use the name given by the download.",
             "editor": "textfield",
             "default": "",
             "sectionCaption": "Advanced"
@@ -44,7 +45,7 @@
         "maxIssuesPerRule": {
             "title": "Max occurrences listed per rule",
             "type": "integer",
-            "description": "Every occurrence is counted, but only this many are listed (with line numbers) for each rule, to keep the report readable.",
+            "description": "Every occurrence of a rule is counted, but only the first N are listed with their line number, field, entry and value. Raise it to get every line to fix (1 to 10000).",
             "minimum": 1,
             "maximum": 10000,
             "default": 50
@@ -52,7 +53,7 @@
         "deleteUploadedFile": {
             "title": "Delete the uploaded file after the check",
             "type": "boolean",
-            "description": "When the file was uploaded to your Apify storage through this form, delete it once the report is written, so only the report is kept. Files given by an external URL are never touched.",
+            "description": "When the file was uploaded to your Apify storage through this form, delete it once the report is written, so only the report is kept. Files given by an external URL are never touched. Turn off to keep the upload, for example to run the check again.",
             "default": true
         }
     },

@@ -1,0 +1,6 @@
+{
+    "language": "en",
+    "includeAiReport": true,
+    "maxIssuesPerRule": 50,
+    "deleteUploadedFile": true
+}
