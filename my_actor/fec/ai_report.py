@@ -6,7 +6,11 @@ import json
 
 import anthropic
 
-DEFAULT_MODEL = 'claude-opus-5-5'
+# Turning a structured report into a fix list is a small job: the cheapest current model is enough.
+# Set FEC_AI_MODEL (for example claude-sonnet-5-5) to use another one.
+DEFAULT_MODEL = 'claude-haiku-5-5'
+# Haiku has no server-side refusal fallback: the parameter is only sent to models that support it.
+MODELS_WITHOUT_FALLBACK = ('claude-haiku-',)
 
 SYSTEM_PROMPT = """You are a French chartered accountant (expert-comptable) who reviews FEC files \
 (Fichier des Écritures Comptables, art. A47 A-1 of the Livre des procédures fiscales) before they are \
@@ -55,6 +59,13 @@ class AiReportError(Exception):
     pass
 
 
+def fallback_options(model: str) -> dict:
+    """On a refusal, re-run the request on Anthropic's recommended fallback model, where that exists."""
+    if model.startswith(MODELS_WITHOUT_FALLBACK):
+        return {}
+    return {'betas': ['server-side-fallback-2026-07-01'], 'fallbacks': 'default'}
+
+
 def _api_error_message(error: anthropic.APIStatusError) -> str:
     """Anthropic's own explanation (error.message in the JSON body), which names the rejected parameter."""
     body = error.body if isinstance(error.body, dict) else {}
@@ -70,8 +81,7 @@ async def generate_ai_report(llm_report: dict, language: str, api_key: str, mode
         response = await client.beta.messages.create(
             model=model,
             max_tokens=16000,
-            betas=['server-side-fallback-2026-07-01'],
-            fallbacks='default',
+            **fallback_options(model),
             output_config={
                 'effort': 'medium',
                 'format': {'type': 'json_schema', 'schema': OUTPUT_SCHEMA},

@@ -102,7 +102,7 @@ One dataset row per file (also saved as the `REPORT` record in the key-value sto
     "riskSignals": [],
     "stats": { "encoding": "utf-8", "separator": "pipe", "lineCount": 214, "entryCount": 87, "totalDebit": "193104,48", "totalCredit": "193004,48", "fiscalYearEnd": "2025-12-31", "numberingScope": "global" },
     "skippedChecks": [],
-    "aiSummary": { "status": "ok", "model": "claude-opus-5-5", "summary": "...", "fixes": [{ "priority": 1, "severity": "blocking", "title": "...", "rules": ["entry_unbalanced"], "action": "...", "where": "..." }] },
+    "aiSummary": { "status": "ok", "model": "claude-haiku-5-5", "summary": "...", "fixes": [{ "priority": 1, "severity": "blocking", "title": "...", "rules": ["entry_unbalanced"], "action": "...", "where": "..." }] },
     "demo": false,
     "uploadedFileDeleted": true
 }
@@ -338,6 +338,6 @@ python test_data/generate_samples.py       # regenerate the 5 synthetic FEC file
 apify run                                  # run locally with storage/key_value_stores/default/INPUT.json
 ```
 
-Environment variables for the Actor owner: `ANTHROPIC_API_KEY` (secret, needed for the AI summary), `FEC_AI_MODEL` (default `claude-opus-5-5`), `FEC_MAX_FILE_MB` (default 2048).
+Environment variables for the Actor owner: `ANTHROPIC_API_KEY` (secret, needed for the AI summary), `FEC_AI_MODEL` (default `claude-haiku-5-5`; set `claude-sonnet-5-5` or `claude-opus-5-5` for a stronger model), `FEC_MAX_FILE_MB` (default 2048).
 
 Example task inputs for Apify Console are in [`tasks/`](tasks/).
