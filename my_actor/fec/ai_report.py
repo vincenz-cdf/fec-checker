@@ -55,6 +55,15 @@ class AiReportError(Exception):
     pass
 
 
+def _api_error_message(error: anthropic.APIStatusError) -> str:
+    """Anthropic's own explanation (error.message in the JSON body), which names the rejected parameter."""
+    body = error.body if isinstance(error.body, dict) else {}
+    detail = body.get('error', {}).get('message') if isinstance(body.get('error'), dict) else None
+    request_id = getattr(error, 'request_id', None)
+    message = (detail or str(error.message))[:500]
+    return f'{message} (request id {request_id})' if request_id else message
+
+
 async def generate_ai_report(llm_report: dict, language: str, api_key: str, model: str = DEFAULT_MODEL) -> dict:
     client = anthropic.AsyncAnthropic(api_key=api_key, max_retries=3, timeout=300)
     try:
@@ -81,7 +90,7 @@ async def generate_ai_report(llm_report: dict, language: str, api_key: str, mode
     except anthropic.RateLimitError as e:
         raise AiReportError('Anthropic API rate limit reached') from e
     except anthropic.APIStatusError as e:
-        raise AiReportError(f'Anthropic API error {e.status_code}') from e
+        raise AiReportError(f'Anthropic API error {e.status_code}: {_api_error_message(e)}') from e
     except anthropic.APIConnectionError as e:
         raise AiReportError('Could not reach the Anthropic API') from e
     finally:

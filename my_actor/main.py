@@ -172,7 +172,7 @@ async def main() -> None:
         report = build_report(result, language)
         report['demo'] = demo
         if not demo:
-            await Actor.charge(EVENT_FILE_CHECKED)
+            await charge(EVENT_FILE_CHECKED)
         Actor.log.info(
             f'Verdict {report["verdict"]}, score {report["score"]}: {report["summary"]["errorCount"]} errors, '
             f'{report["summary"]["warningCount"]} warnings, {report["summary"]["riskSignalCount"]} risk signals '
@@ -230,5 +230,22 @@ async def build_ai_summary(report: dict, language: str) -> dict:
     except AiReportError as e:
         Actor.log.warning(f'AI report failed: {e}')
         return {'status': 'failed', 'reason': str(e)}
-    await Actor.charge(EVENT_AI_REPORT)
+    await charge(EVENT_AI_REPORT)
     return {'status': 'ok', **ai}
+
+
+async def charge(event_name: str) -> None:
+    """Charge one event and say so in the log, so a missing charge is visible in the run log."""
+    result = await Actor.charge(event_name)
+    pricing = Actor.get_charging_manager().get_pricing_info()
+    if not pricing.is_pay_per_event:
+        return
+    if event_name not in pricing.per_event_prices:
+        Actor.log.warning(
+            f"Event '{event_name}' is not in this Actor's pricing: nothing was charged. "
+            f'Events configured: {", ".join(sorted(pricing.per_event_prices)) or "none"}'
+        )
+    elif result.charged_count:
+        Actor.log.info(f"Charged event '{event_name}'")
+    else:
+        Actor.log.warning(f"Event '{event_name}' was not charged: the run's maximum cost is reached")
