@@ -1,0 +1,6 @@
+{
+    "fecFile": "test_data/fec/bad_dates/123456782FEC20251231.txt",
+    "language": "fr",
+    "includeAiReport": false,
+    "maxIssuesPerRule": 50
+}

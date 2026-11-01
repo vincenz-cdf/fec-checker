@@ -1,0 +1,6 @@
+{
+    "fecFile": "test_data/fec/unbalanced/123456782FEC20251231.txt",
+    "language": "fr",
+    "includeAiReport": false,
+    "maxIssuesPerRule": 50
+}

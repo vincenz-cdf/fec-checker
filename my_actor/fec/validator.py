@@ -16,6 +16,7 @@ from dataclasses import field as dc_field
 from datetime import date
 from pathlib import Path
 
+from my_actor.fec.inputfile import utf16_variant
 from my_actor.fec.signals import benford_test, compute_risk_signals, fmt_cents
 
 EXPECTED_HEADERS = (
@@ -123,7 +124,12 @@ def check_file_name(file_name: str, fiscal_year_end: date | None, issues: IssueC
 
 
 def detect_encoding(path: Path, chunk_size: int = 1 << 20) -> str:
-    """Return 'utf-8' if the whole file decodes as UTF-8, else 'iso-8859-15'. Reads in chunks."""
+    """Return a UTF-16 codec name for UTF-16 text (Excel "Unicode text" export), 'utf-8' if the whole
+    file decodes as UTF-8, else 'iso-8859-15'. Reads in chunks."""
+    with path.open('rb') as f:
+        utf16 = utf16_variant(f.read(4096))
+    if utf16:
+        return utf16
     decoder = codecs.getincrementaldecoder('utf-8')()
     try:
         with path.open('rb') as f:
@@ -235,6 +241,8 @@ class FecValidator:
         self._fye_ordinal = self.fiscal_year_end.toordinal() if self.fiscal_year_end else None
 
         encoding = detect_encoding(self.path)
+        if encoding.startswith('utf-16'):
+            self.issues.add('encoding_utf16', None, value=encoding)
         separator = None
         columns: dict[str, int] = {}
         fatal = False
@@ -252,6 +260,10 @@ class FecValidator:
                 separator = '\t'
             elif '|' in header_line:
                 separator = '|'
+            elif header_line.count(';') >= len(EXPECTED_HEADERS) // 2:
+                # A common spreadsheet export, but art. A47 A-1 only allows tab or pipe.
+                self.issues.add('separator_semicolon', 1)
+                fatal = True
             else:
                 self.issues.add('separator', 1)
                 fatal = True

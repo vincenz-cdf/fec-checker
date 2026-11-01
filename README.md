@@ -58,7 +58,7 @@ Warnings: empty lines, zero lines, negative amounts, validation date before entr
 
 | Field | Type | Description |
 |---|---|---|
-| `fecFile` | file upload or URL | The FEC file (.txt, tab- or pipe-separated, UTF-8 or ISO-8859-15). Leave empty for the demo. |
+| `fecFile` | file upload or URL | The FEC file (.txt, tab- or pipe-separated, UTF-8 or ISO-8859-15), or a .zip holding it. Leave empty for the demo. |
 | `language` | `fr` / `en` | Language of the messages and of the AI summary. Default `fr`. |
 | `includeAiReport` | boolean | Add an AI-written, prioritized fix list (`aiSummary`). Default `false`. |
 | `fiscalYearEnd` | date | Closing date, YYYY-MM-DD. Optional; defaults to the date in the file name. |
@@ -137,6 +137,17 @@ No. FEC Checker checks the published format rules and flags unusual patterns. Th
 
 **What is the difference between an error, a warning and a risk signal?**
 An error breaks a format rule of article A47 A-1: the file should be fixed and regenerated. A warning is unusual but allowed. A risk signal is a pattern auditors often look at, such as weekend postings or round amounts; it can have a perfectly good explanation.
+
+**What files can I upload?**
+
+| You upload | What happens |
+|---|---|
+| A `.txt` FEC (tab or pipe, UTF-8 or ISO-8859-15) | Checked |
+| A `.zip` holding exactly one `.txt` FEC | Unzipped, then checked; the name of the file inside is used for the naming rule |
+| A UTF-16 export (Excel's "Unicode text") | Checked, with an `encoding_utf16` warning |
+| The same content as `.csv` | Checked; the `file_name` rule fails because the law requires `.txt` |
+| A semicolon-separated file | Reported with the `separator_semicolon` error: re-export with tab or pipe |
+| A PDF, Excel file, image, XML or other non-text file | Refused before the check, with a message saying what was received; not charged |
 
 **Does it support the Montant/Sens layout or XML files?**
 Not yet. It supports the Debit/Credit layout in a flat .txt file, tab- or pipe-separated, which is what most accounting software exports.
@@ -217,7 +228,7 @@ Avertissements : lignes vides, lignes à zéro, montants négatifs, date de vali
 
 | Champ | Type | Description |
 |---|---|---|
-| `fecFile` | fichier ou URL | Le FEC (.txt, séparé par tabulations ou barres verticales, UTF-8 ou ISO-8859-15). Laissez vide pour la démonstration. |
+| `fecFile` | fichier ou URL | Le FEC (.txt, séparé par tabulations ou barres verticales, UTF-8 ou ISO-8859-15), ou un .zip qui le contient. Laissez vide pour la démonstration. |
 | `language` | `fr` / `en` | Langue des messages et du résumé IA. Par défaut `fr`. |
 | `includeAiReport` | booléen | Ajoute une liste de corrections priorisée rédigée par IA (`aiSummary`). Par défaut `false`. |
 | `fiscalYearEnd` | date | Date de clôture, AAAA-MM-JJ. Facultatif ; par défaut, la date du nom de fichier. |
@@ -278,6 +289,17 @@ Non. FEC Checker vérifie les règles de format publiées et signale des schéma
 
 **Quelle différence entre une erreur, un avertissement et un signal de risque ?**
 Une erreur enfreint une règle de format de l'article A47 A-1 : le fichier doit être corrigé et régénéré. Un avertissement est inhabituel mais admis. Un signal de risque est un schéma que les vérificateurs examinent souvent, comme des écritures le week-end ou des montants ronds ; il peut avoir une explication tout à fait légitime.
+
+**Quels fichiers puis-je envoyer ?**
+
+| Vous envoyez | Résultat |
+|---|---|
+| Un FEC `.txt` (tabulation ou barre verticale, UTF-8 ou ISO-8859-15) | Contrôlé |
+| Un `.zip` contenant un seul FEC `.txt` | Décompressé puis contrôlé ; le nom du fichier contenu sert pour la règle de nommage |
+| Un export UTF-16 (« texte Unicode » d'Excel) | Contrôlé, avec l'avertissement `encoding_utf16` |
+| Le même contenu en `.csv` | Contrôlé ; la règle `file_name` échoue car le texte impose `.txt` |
+| Un fichier séparé par des points-virgules | Signalé par l'erreur `separator_semicolon` : réexportez avec tabulation ou barre verticale |
+| Un PDF, un fichier Excel, une image, un XML ou tout autre fichier non texte | Refusé avant le contrôle, avec un message indiquant ce qui a été reçu ; non facturé |
 
 **Le format Montant/Sens ou les fichiers XML sont-ils acceptés ?**
 Pas encore. Le format Débit/Crédit en fichier .txt à plat, séparé par tabulations ou barres verticales, est accepté : c'est ce qu'exportent la plupart des logiciels comptables.

@@ -8,7 +8,7 @@
         "fecFile": {
             "title": "FEC file",
             "type": "string",
-            "description": "The FEC to check: upload it or paste an http(s) URL to it. Expected format: one flat .txt file, tab- or pipe-separated, UTF-8 or ISO-8859-15, with the 18 columns JournalCode … Idevise, named SIRENFECAAAAMMJJ.txt (for example 123456782FEC20251231.txt). Leave empty to check a bundled synthetic demo file; demo runs are not charged.",
+            "description": "The FEC to check: upload it or paste an http(s) URL to it. Expected format: one flat .txt file, tab- or pipe-separated, UTF-8 or ISO-8859-15, with the 18 columns JournalCode … Idevise, named SIRENFECAAAAMMJJ.txt (for example 123456782FEC20251231.txt). A .zip holding exactly one .txt FEC is unpacked; a UTF-16 export is read with a warning. PDFs, spreadsheets and other non-text files are refused before the check and not charged. Leave empty to check a bundled synthetic demo file; demo runs are not charged.",
             "editor": "fileupload",
             "default": ""
         },

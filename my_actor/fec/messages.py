@@ -36,6 +36,16 @@ RULES: dict[str, dict[str, str]] = {
         'fr': 'Séparateur introuvable : la ligne d\'en-tête doit être séparée par des tabulations ou des barres verticales.',
         'en': 'No separator found: the header line must be tab- or pipe-separated.',
     },
+    'separator_semicolon': {
+        'severity': ERROR,
+        'fr': 'Le fichier est séparé par des points-virgules : l\'article A47 A-1 n\'admet que la tabulation ou la barre verticale (|). Réexportez le FEC depuis votre logiciel comptable.',
+        'en': 'The file is semicolon-separated: article A47 A-1 only allows tab or pipe (|). Export the FEC again from your accounting software.',
+    },
+    'encoding_utf16': {
+        'severity': WARNING,
+        'fr': 'Le fichier est encodé en UTF-16 (export « texte Unicode » d\'Excel) : il a été lu, mais seuls l\'ASCII, l\'ISO-8859-15 et l\'UTF-8 sont prévus. Réexportez-le en UTF-8.',
+        'en': 'The file is UTF-16 encoded (Excel "Unicode text" export): it was read, but only ASCII, ISO-8859-15 and UTF-8 are expected. Export it again as UTF-8.',
+    },
     'header_count': {
         'severity': ERROR,
         'fr': 'L\'en-tête doit contenir exactement {expected} colonnes.',

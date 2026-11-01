@@ -64,7 +64,7 @@ class TestEncodingAndSeparator(unittest.TestCase):
         self.assertEqual(counts(result), {})
 
     def test_no_separator_is_fatal(self) -> None:
-        result = check(entry('1'), sep=';')
+        result = check(entry('1'), sep=',')
         self.assertIn('separator', counts(result))
         self.assertTrue(result.fatal)
 

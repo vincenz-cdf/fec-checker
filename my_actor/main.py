@@ -15,6 +15,7 @@ from pathlib import Path
 from apify import Actor, Event
 
 from my_actor.fec.ai_report import DEFAULT_MODEL, AiReportError, generate_ai_report
+from my_actor.fec.inputfile import NotAFecError, prepare_input
 from my_actor.fec.report import build_report, report_for_llm
 from my_actor.fec.validator import FecValidator
 
@@ -146,6 +147,15 @@ async def main() -> None:
                 except OSError as e:
                     await Actor.fail(status_message=f'Could not download fecFile: {e.__class__.__name__}')
                     return
+                try:
+                    path, inner_name = await asyncio.to_thread(prepare_input, path, workdir, max_bytes)
+                except NotAFecError as e:
+                    # Refused before the check, so nothing is charged.
+                    await Actor.fail(status_message=str(e))
+                    return
+                if inner_name:
+                    Actor.log.info('Unzipped the FEC from the uploaded archive')
+                    served_name = inner_name
             file_name = file_name_override or served_name
             Actor.log.info(f'Checking {file_name} ({path.stat().st_size:,} bytes)')
 
