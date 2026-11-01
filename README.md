@@ -22,6 +22,48 @@ Check a French **FEC** (*Fichier des Écritures Comptables*) before you hand it 
 - **Auditors and CFOs.** Spot risky entries fast: weekend postings, round amounts, a cash account in the red, an uncleared suspense account, entries after the closing date.
 - **AI agents.** One call in, one JSON report out, with stable rule codes an agent can act on.
 
+### Your FEC file
+
+**You don't build it by hand.** Every French accounting package exports the FEC, usually from its year-end or tax menu: look for "FEC", "Fichier des écritures comptables" or "Export DGFiP" (Sage, Cegid, EBP, ACD, Pennylane, Quadra…). Upload that export as it is. Don't open and re-save it in a spreadsheet: that is the most common way to break the separator, the dates or the accents.
+
+It is a text file with one header line, then one line per accounting line of every entry in the fiscal year, opening balances (*à-nouveaux*) included. Fields are separated by a tab or a pipe (`|`).
+
+The 18 columns, in this order (art. A47 A-1 LPF):
+
+| # | Column | Content | Format | Empty allowed? | Example |
+|---|---|---|---|---|---|
+| 1 | JournalCode | Journal code | text | no | `VE` |
+| 2 | JournalLib | Journal name | text | no | `Ventes` |
+| 3 | EcritureNum | Entry number, on a continuous sequence | text or number | no | `000039` |
+| 4 | EcritureDate | Accounting date | date `AAAAMMJJ` | no | `20250610` |
+| 5 | CompteNum | General ledger account number | text | no | `411000` |
+| 6 | CompteLib | Account name | text | no | `Clients` |
+| 7 | CompAuxNum | Sub-ledger account (customer, supplier) | text | yes | `CLI001` |
+| 8 | CompAuxLib | Sub-ledger account name | text | only if 7 is empty | `Atelier Durand` |
+| 9 | PieceRef | Supporting document reference (invoice no.) | text | no | `F2025-06` |
+| 10 | PieceDate | Document date | date `AAAAMMJJ` | no | `20250610` |
+| 11 | EcritureLib | Entry label | text | no | `Facture F2025-06` |
+| 12 | Debit | Debit amount | amount, decimal comma, no thousands separator | no (`0,00` if none) | `3960,00` |
+| 13 | Credit | Credit amount | amount, same format | no (`0,00` if none) | `0,00` |
+| 14 | EcritureLet | Matching (lettrage) code | text | yes | `AA` |
+| 15 | DateLet | Matching date | date `AAAAMMJJ` | only if 14 is empty | `20250712` |
+| 16 | ValidDate | Date the entry was validated (became final) | date `AAAAMMJJ` | no | `20250610` |
+| 17 | Montantdevise | Amount in foreign currency | amount | yes | `1200,00` |
+| 18 | Idevise | Currency code | text | only if 17 is empty | `USD` |
+
+Optional columns stay in the header even when they are empty. One entry (one `EcritureNum`) spans several lines whose debits and credits balance. A complete sale, with its three lines:
+
+```text
+JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise
+VE|Ventes|000039|20250610|411000|Clients|CLI001|Atelier Durand|F2025-06|20250610|Facture F2025-06 Atelier Durand|3960,00|0,00|||20250610||
+VE|Ventes|000039|20250610|706000|Prestations de services|||F2025-06|20250610|Facture F2025-06 Atelier Durand|0,00|3300,00|||20250610||
+VE|Ventes|000039|20250610|445710|TVA collectee|||F2025-06|20250610|Facture F2025-06 Atelier Durand|0,00|660,00|||20250610||
+```
+
+To see a full example and its report, run the Actor with an empty input: it checks a bundled 214-line synthetic FEC.
+
+Not covered: the Montant/Sens layout (one signed amount instead of Debit/Credit) and the 21- or 22-column files of cash-basis BNC and agricultural filers.
+
 ### What it checks
 
 #### Format rules (errors)
@@ -30,7 +72,7 @@ Check a French **FEC** (*Fichier des Écritures Comptables*) before you hand it 
 |---|---|
 | `file_name` | File name is `SIRENFECAAAAMMJJ.txt` (the SIREN Luhn key is checked too, as a warning) |
 | `separator` | Tab or pipe (`\|`) separator |
-| `header_*` | Exactly the 18 mandatory columns, spelled and ordered as the law requires: JournalCode, JournalLib, EcritureNum, EcritureDate, CompteNum, CompteLib, CompAuxNum, CompAuxLib, PieceRef, PieceDate, EcritureLib, Debit, Credit, EcritureLet, DateLet, ValidDate, Montantdevise, Idevise |
+| `header_*` | Exactly the 18 mandatory columns, spelled and ordered as the law requires (see [Your FEC file](#your-fec-file)) |
 | `field_count` | Every line has as many fields as the header |
 | `required_field`, `pair_incomplete` | Mandatory fields are filled; CompAuxNum/CompAuxLib, EcritureLet/DateLet and Montantdevise/Idevise are filled together |
 | `date_format`, `date_invalid` | Dates are `AAAAMMJJ` and exist (no 30 February) |
@@ -145,7 +187,7 @@ An error breaks a format rule of article A47 A-1: the file should be fixed and r
 | A `.txt` FEC (tab or pipe, UTF-8 or ISO-8859-15) | Checked |
 | A `.zip` holding exactly one `.txt` FEC | Unzipped, then checked; the name of the file inside is used for the naming rule |
 | A UTF-16 export (Excel's "Unicode text") | Checked, with an `encoding_utf16` warning |
-| The same content as `.csv` | Checked; the `file_name` rule fails because the law requires `.txt` |
+| The same content as `.csv` | Checked; the `file_name` rule fails, because the checker expects the usual `.txt` extension |
 | A semicolon-separated file | Reported with the `separator_semicolon` error: re-export with tab or pipe |
 | A PDF, Excel file, image, XML or other non-text file | Refused before the check, with a message saying what was received; not charged |
 
@@ -192,6 +234,48 @@ Vérifiez votre **FEC** (*Fichier des Écritures Comptables*) avant de le remett
 - **Auditeurs et directeurs financiers.** Repérez vite les écritures à risque : écritures le week-end, montants ronds, caisse créditrice, compte d'attente non soldé, écritures après la clôture.
 - **Agents IA.** Un appel, un rapport JSON, avec des codes de règle stables sur lesquels un agent peut agir.
 
+### Votre fichier FEC
+
+**Vous ne le construisez pas à la main.** Tous les logiciels comptables français exportent le FEC, en général depuis le menu de clôture ou le menu fiscal : cherchez « FEC », « Fichier des écritures comptables » ou « Export DGFiP » (Sage, Cegid, EBP, ACD, Pennylane, Quadra…). Envoyez cet export tel quel. Ne l'ouvrez pas pour le réenregistrer dans un tableur : c'est la façon la plus courante de casser le séparateur, les dates ou les accents.
+
+C'est un fichier texte : une ligne d'en-tête, puis une ligne par ligne d'écriture de l'exercice, à-nouveaux compris. Les zones sont séparées par une tabulation ou une barre verticale (`|`).
+
+Les 18 colonnes, dans cet ordre (art. A47 A-1 LPF) :
+
+| N° | Colonne | Contenu | Format | Peut être vide ? | Exemple |
+|---|---|---|---|---|---|
+| 1 | JournalCode | Code du journal | texte | non | `VE` |
+| 2 | JournalLib | Libellé du journal | texte | non | `Ventes` |
+| 3 | EcritureNum | Numéro de l'écriture, sur une séquence continue | texte ou nombre | non | `000039` |
+| 4 | EcritureDate | Date de comptabilisation | date `AAAAMMJJ` | non | `20250610` |
+| 5 | CompteNum | Numéro de compte général | texte | non | `411000` |
+| 6 | CompteLib | Libellé du compte | texte | non | `Clients` |
+| 7 | CompAuxNum | Compte auxiliaire (client, fournisseur) | texte | oui | `CLI001` |
+| 8 | CompAuxLib | Libellé du compte auxiliaire | texte | seulement si la 7 est vide | `Atelier Durand` |
+| 9 | PieceRef | Référence de la pièce (n° de facture) | texte | non | `F2025-06` |
+| 10 | PieceDate | Date de la pièce | date `AAAAMMJJ` | non | `20250610` |
+| 11 | EcritureLib | Libellé de l'écriture | texte | non | `Facture F2025-06` |
+| 12 | Debit | Montant au débit | montant, virgule décimale, sans séparateur de milliers | non (`0,00` à défaut) | `3960,00` |
+| 13 | Credit | Montant au crédit | montant, même format | non (`0,00` à défaut) | `0,00` |
+| 14 | EcritureLet | Code de lettrage | texte | oui | `AA` |
+| 15 | DateLet | Date de lettrage | date `AAAAMMJJ` | seulement si la 14 est vide | `20250712` |
+| 16 | ValidDate | Date de validation de l'écriture (devenue définitive) | date `AAAAMMJJ` | non | `20250610` |
+| 17 | Montantdevise | Montant en devise | montant | oui | `1200,00` |
+| 18 | Idevise | Code de la devise | texte | seulement si la 17 est vide | `USD` |
+
+Les colonnes facultatives restent dans l'en-tête même vides. Une écriture (un `EcritureNum`) s'étend sur plusieurs lignes dont les débits et les crédits s'équilibrent. Une vente complète, sur trois lignes :
+
+```text
+JournalCode|JournalLib|EcritureNum|EcritureDate|CompteNum|CompteLib|CompAuxNum|CompAuxLib|PieceRef|PieceDate|EcritureLib|Debit|Credit|EcritureLet|DateLet|ValidDate|Montantdevise|Idevise
+VE|Ventes|000039|20250610|411000|Clients|CLI001|Atelier Durand|F2025-06|20250610|Facture F2025-06 Atelier Durand|3960,00|0,00|||20250610||
+VE|Ventes|000039|20250610|706000|Prestations de services|||F2025-06|20250610|Facture F2025-06 Atelier Durand|0,00|3300,00|||20250610||
+VE|Ventes|000039|20250610|445710|TVA collectee|||F2025-06|20250610|Facture F2025-06 Atelier Durand|0,00|660,00|||20250610||
+```
+
+Pour voir un exemple complet et son rapport, lancez l'Actor avec une entrée vide : il contrôle un FEC fictif de 214 lignes fourni avec l'Actor.
+
+Non couverts : le format Montant/Sens (un montant signé au lieu de Débit/Crédit) et les fichiers à 21 ou 22 colonnes des BNC et bénéfices agricoles en comptabilité de trésorerie.
+
 ### Ce qui est contrôlé
 
 #### Règles de format (erreurs)
@@ -200,7 +284,7 @@ Vérifiez votre **FEC** (*Fichier des Écritures Comptables*) avant de le remett
 |---|---|
 | `file_name` | Le nom du fichier est `SIRENFECAAAAMMJJ.txt` (la clé de Luhn du SIREN est aussi vérifiée, en avertissement) |
 | `separator` | Séparateur tabulation ou barre verticale (`\|`) |
-| `header_*` | Exactement les 18 colonnes obligatoires, orthographiées et ordonnées comme l'exige le texte |
+| `header_*` | Exactement les 18 colonnes obligatoires, orthographiées et ordonnées comme l'exige le texte (voir [Votre fichier FEC](#votre-fichier-fec)) |
 | `field_count` | Chaque ligne a autant de champs que l'en-tête |
 | `required_field`, `pair_incomplete` | Les champs obligatoires sont renseignés ; CompAuxNum/CompAuxLib, EcritureLet/DateLet et Montantdevise/Idevise vont ensemble |
 | `date_format`, `date_invalid` | Les dates sont au format `AAAAMMJJ` et existent (pas de 30 février) |
@@ -297,7 +381,7 @@ Une erreur enfreint une règle de format de l'article A47 A-1 : le fichier doit 
 | Un FEC `.txt` (tabulation ou barre verticale, UTF-8 ou ISO-8859-15) | Contrôlé |
 | Un `.zip` contenant un seul FEC `.txt` | Décompressé puis contrôlé ; le nom du fichier contenu sert pour la règle de nommage |
 | Un export UTF-16 (« texte Unicode » d'Excel) | Contrôlé, avec l'avertissement `encoding_utf16` |
-| Le même contenu en `.csv` | Contrôlé ; la règle `file_name` échoue car le texte impose `.txt` |
+| Le même contenu en `.csv` | Contrôlé ; la règle `file_name` échoue, car l'outil attend l'extension usuelle `.txt` |
 | Un fichier séparé par des points-virgules | Signalé par l'erreur `separator_semicolon` : réexportez avec tabulation ou barre verticale |
 | Un PDF, un fichier Excel, une image, un XML ou tout autre fichier non texte | Refusé avant le contrôle, avec un message indiquant ce qui a été reçu ; non facturé |
 
